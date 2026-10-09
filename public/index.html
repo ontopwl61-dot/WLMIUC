@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>راديو الصوت</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;600;700&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d1a21; --panel:#15262f; --panel2:#1b3140; --line:#27424f;
+  --text:#e8eef0; --mute:#8fa6b0; --amber:#f2b544; --ok:#5fd6a5; --bad:#e5604d;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{height:100%}
+body{
+  margin:0;min-height:100%;background:var(--bg);color:var(--text);
+  font-family:"Readex Pro","Segoe UI",Tahoma,Arial,sans-serif;
+  display:flex;justify-content:center;padding:20px 14px 40px;
+  background-image:radial-gradient(circle at 50% -10%,#1d3a4a 0,transparent 55%);
+}
+.wrap{width:100%;max-width:440px}
+.device{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:20px;box-shadow:0 18px 50px rgba(0,0,0,.45)}
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.title{font-weight:700;font-size:18px}
+.led{display:flex;align-items:center;gap:8px;color:var(--mute);font-size:13px}
+.led i{width:10px;height:10px;border-radius:50%;background:#44606c;display:block;transition:.2s}
+.led.on i{background:var(--ok);box-shadow:0 0 10px var(--ok)}
+.led.tx i{background:var(--amber);box-shadow:0 0 12px var(--amber)}
+.led.warn i{background:var(--bad);box-shadow:0 0 10px var(--bad)}
+.screen{background:#0a1218;border:1px solid var(--line);border-radius:14px;padding:16px;text-align:center;min-height:128px;display:flex;flex-direction:column;justify-content:center;gap:6px}
+.screen .label{color:var(--mute);font-size:13px}
+.screen .big{font-size:34px;color:var(--amber);line-height:1.3;font-weight:700}
+.screen .big.dim{color:#4d6a76}
+.screen .sub{color:var(--mute);font-size:13px}
+.view{display:none;margin-top:16px}
+.view.show{display:block}
+label.lbl{display:block;font-size:14px;margin-bottom:8px}
+.codebox{width:100%;background:#0a1218;border:1px solid var(--line);border-radius:12px;color:var(--amber);font-family:"DM Mono",ui-monospace,Menlo,monospace;font-size:28px;letter-spacing:6px;text-align:center;padding:14px 10px;direction:ltr;text-transform:uppercase}
+.codebox:focus-visible,button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.err{color:var(--bad);font-size:13px;min-height:18px;margin:8px 2px 0}
+.hint{color:var(--mute);font-size:13px;line-height:1.7;margin:10px 2px 0}
+.btn{width:100%;border:0;border-radius:12px;padding:14px;font:inherit;font-weight:600;font-size:16px;cursor:pointer}
+.primary{background:var(--amber);color:#2a1d00;margin-top:12px}
+.ghost{background:transparent;color:var(--mute);border:1px solid var(--line);margin-top:10px;font-weight:400}
+.ghost:hover{color:var(--text);border-color:var(--mute)}
+.away{border:1px dashed var(--line);border-radius:12px;padding:14px;text-align:center;color:var(--mute);font-size:14px;line-height:1.8}
+.tip{margin-top:14px;background:#0f1e27;border:1px solid var(--line);border-radius:12px;padding:12px;color:var(--mute);font-size:13px;line-height:1.8;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="device">
+    <div class="top">
+      <div class="title">راديو الصوت</div>
+      <div class="led" id="led"><i></i><span id="ledTxt">غير متصل</span></div>
+    </div>
+
+    <div class="screen">
+      <div class="label" id="sLabel">الراديو</div>
+      <div class="big dim" id="sBig">--</div>
+      <div class="sub" id="sSub">أدخل الكود اللي ظهر لك في اللعبة</div>
+    </div>
+
+    <div class="view show" id="vCode">
+      <div style="margin-top:16px">
+        <label class="lbl" for="code">كود الربط</label>
+        <input class="codebox" id="code" maxlength="7" autocomplete="off" spellcheck="false" placeholder="K7P-4QX">
+        <div class="err" id="err"></div>
+      </div>
+      <button class="btn primary" id="connect">اربط المايك</button>
+      <p class="hint">المتصفح بيطلب إذن المايك. وافق عليه وخلّ هذي الصفحة مفتوحة وانت تلعب.</p>
+    </div>
+
+    <div class="view" id="vLive">
+      <div class="tip">امسك زر التحدث في اللعبة (V على الكمبيوتر أو الزر على الجوال) وتكلم.<br>تسمع اللي معك على نفس الموجة تلقائيًا.</div>
+      <button class="btn ghost" id="disc">فصل المايك</button>
+    </div>
+
+    <div class="view" id="vAway">
+      <div class="away">
+        طلعت من الراديو. المايك مكتوم.<br>
+        الكود يبقى شغال <b id="cd" style="color:var(--amber);font-family:'DM Mono',monospace">30:00</b><br>
+        ادخل الراديو قبل ما يخلص وترجع على طول بدون كود جديد.
+      </div>
+      <button class="btn ghost" id="disc2">فصل المايك</button>
+    </div>
+  </div>
+</div>
+
+<!-- ثبّت الإصدار. لو تبي أحدث، شوف آخر إصدار على npm (livekit-client) واختر واحد عمره أكثر من أسبوعين -->
+<script src="https://cdn.jsdelivr.net/npm/livekit-client@2.9.1/dist/livekit-client.umd.min.js"></script>
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var LK = window.LivekitClient;
+  var S = { es:null, room:null, roomName:null, wantTalk:false, awayUntil:0, timer:0 };
+
+  function setLed(cls, txt){ $('led').className = 'led ' + cls; $('ledTxt').textContent = txt; }
+  function show(id){ ['vCode','vLive','vAway'].forEach(function(v){ $(v).classList.toggle('show', v === id); }); }
+  function screen(label, big, sub, dim){
+    $('sLabel').textContent = label;
+    var b = $('sBig'); b.textContent = big; b.classList.toggle('dim', !!dim);
+    $('sSub').textContent = sub;
+  }
+  function clean(v){ return v.replace(/[^a-zA-Z0-9]/g, '').toUpperCase(); }
+
+  $('code').addEventListener('input', function(e){
+    var v = clean(e.target.value).slice(0, 6);
+    e.target.value = v.length > 3 ? v.slice(0, 3) + '-' + v.slice(3) : v;
+    $('err').textContent = '';
+  });
+  $('code').addEventListener('keydown', function(e){ if (e.key === 'Enter') $('connect').click(); });
+
+  /* ---------- ربط ---------- */
+  $('connect').addEventListener('click', async function(){
+    var v = clean($('code').value);
+    if (v.length < 6) { $('err').textContent = 'الكود ٦ خانات. تأكد منه من شاشة اللعبة.'; return; }
+    setLed('warn', 'جاري الربط...');
+    // نطلب إذن المايك الحين (من ضغطة المستخدم)
+    try {
+      var st = await navigator.mediaDevices.getUserMedia({ audio: true });
+      st.getTracks().forEach(function(t){ t.stop(); });
+    } catch (e) {
+      $('err').textContent = 'ما قدرنا نفتح المايك. وافق على الإذن من المتصفح وجرب مرة ثانية.';
+      setLed('', 'غير متصل'); return;
+    }
+    try {
+      var r = await fetch('/link', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: v }) });
+      if (r.status === 429) throw new Error('محاولات كثيرة. انتظر دقيقة.');
+      if (!r.ok) throw new Error('الكود غلط أو انتهى. شوف الكود الجديد في اللعبة.');
+      var j = await r.json();
+      openEvents(j.sid);
+    } catch (e) {
+      $('err').textContent = e.message || 'صار خطأ، جرب مرة ثانية.';
+      setLed('', 'غير متصل');
+    }
+  });
+
+  function openEvents(sid){
+    if (S.es) S.es.close();
+    S.es = new EventSource('/events?sid=' + encodeURIComponent(sid));
+    S.es.onmessage = function(ev){ handle(JSON.parse(ev.data)); };
+    S.es.onerror = function(){
+      if (S.es && S.es.readyState === 2) teardown('انقطع الاتصال. ادخل الكود من جديد.');
+    };
+  }
+
+  /* ---------- الأحداث من السيرفر ---------- */
+  function handle(m){
+    if (m.type === 'state') {
+      if (m.inRadio) {
+        clearInterval(S.timer);
+        S.wantTalk = !!m.ptt;
+        show('vLive');
+        setLed('on', 'متصل');
+        screen('الراديو', 'متصل', 'أي موجة تدخلها تقدر تتكلم فيها', false);
+        joinRoom(m.url, m.token, m.room);
+      } else {
+        leaveRoom();
+        S.awayUntil = m.awayUntil;
+        show('vAway');
+        setLed('warn', 'خارج الراديو');
+        screen('الراديو', '--', 'المايك مكتوم', true);
+        tick(); clearInterval(S.timer); S.timer = setInterval(tick, 500);
+      }
+    } else if (m.type === 'ptt') {
+      setTalk(!!m.ptt);
+    } else if (m.type === 'end') {
+      var msg = m.reason === 'expired' ? 'انتهى الكود لأنك ما دخلت الراديو خلال ٣٠ دقيقة. ادخل الراديو في اللعبة وبيطلع لك كود جديد.'
+              : m.reason === 'replaced' ? 'انفتح الاتصال من صفحة ثانية.'
+              : 'انفصل المايك. اكتب في الشات عادي.';
+      teardown(msg);
+    }
+  }
+
+  function tick(){
+    var left = Math.max(0, S.awayUntil - Date.now());
+    var mm = Math.floor(left / 60000), ss = Math.floor(left / 1000) % 60;
+    $('cd').textContent = (mm < 10 ? '0' : '') + mm + ':' + (ss < 10 ? '0' : '') + ss;
+  }
+
+  /* ---------- LiveKit ---------- */
+  async function joinRoom(url, token, roomName){
+    if (S.room && S.roomName === roomName) return;      // نفس الغرفة، ما نسوي شي
+    await leaveRoom();
+    var room = new LK.Room({
+      audioCaptureDefaults: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+    });
+    room.on(LK.RoomEvent.TrackSubscribed, function(track){
+      if (track.kind === 'audio') { var el = track.attach(); document.body.appendChild(el); }
+    });
+    room.on(LK.RoomEvent.TrackUnsubscribed, function(track){
+      track.detach().forEach(function(el){ el.remove(); });
+    });
+    room.on(LK.RoomEvent.Disconnected, function(){ if (S.room === room) { S.room = null; S.roomName = null; } });
+    try {
+      S.room = room; S.roomName = roomName;
+      await room.connect(url, token);
+      await room.localParticipant.setMicrophoneEnabled(true);     // ننشر المايك مرة وحدة
+      await room.localParticipant.setMicrophoneEnabled(S.wantTalk); // ونكتمه (mute) لين يضغط
+      try { await room.startAudio(); } catch (e) {}
+    } catch (e) {
+      console.error(e);
+      S.room = null; S.roomName = null;
+      setLed('warn', 'تعذر الاتصال بالصوت');
+    }
+  }
+  async function leaveRoom(){
+    var r = S.room; S.room = null; S.roomName = null;
+    if (r) { try { await r.disconnect(); } catch (e) {} }
+    document.querySelectorAll('audio').forEach(function(a){ a.remove(); });
+  }
+  function setTalk(on){
+    S.wantTalk = on;
+    setLed(on ? 'tx' : 'on', on ? 'يرسل صوتك' : 'متصل');
+    if (S.room) { S.room.localParticipant.setMicrophoneEnabled(on).catch(function(){}); }
+  }
+
+  /* ---------- فصل / نهاية ---------- */
+  async function teardown(msg){
+    clearInterval(S.timer);
+    if (S.es) { S.es.close(); S.es = null; }
+    await leaveRoom();
+    S.wantTalk = false;
+    $('code').value = '';
+    $('err').textContent = msg || '';
+    show('vCode');
+    setLed('', 'غير متصل');
+    screen('الراديو', '--', 'أدخل الكود اللي ظهر لك في اللعبة', true);
+  }
+  $('disc').addEventListener('click', function(){ teardown('انفصل المايك. اكتب في الشات عادي.'); });
+  $('disc2').addEventListener('click', function(){ teardown('انفصل المايك. اكتب في الشات عادي.'); });
+})();
+</script>
+</body>
+</html>
