@@ -1,0 +1,8 @@
+{
+  "name": "radio-voice-cf3",
+  "version": "3.0.0",
+  "private": true,
+  "main": "server.js",
+  "scripts": { "start": "node server.js", "test": "node test/run.js" },
+  "engines": { "node": ">=18" }
+}
